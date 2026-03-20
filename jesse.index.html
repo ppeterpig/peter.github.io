@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JESSE DESIGN 2026 | Portfolio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.15);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            color: #fff;
+            font-family: 'Inter', 'PingFang SC', sans-serif;
+            overflow: hidden;
+            cursor: none; /* 隐藏原生鼠标 */
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        /* 全局纸飞机光标 */
+        #custom-cursor {
+            position: fixed;
+            width: 28px;
+            height: 28px;
+            pointer-events: none;
+            z-index: 10000;
+            fill: white;
+            filter: drop-shadow(0 0 5px rgba(255,255,255,0.8));
+            transition: transform 0.15s ease-out, opacity 0.3s ease;
+            transform-origin: center;
+        }
+
+        /* 液态玻璃放大镜 */
+        #glass-magnifier {
+            position: fixed;
+            width: 220px;
+            height: 220px;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            pointer-events: none;
+            display: none;
+            z-index: 9999;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 50px rgba(0,0,0,0.5), inset 0 0 30px rgba(255,255,255,0.2);
+            background-repeat: no-repeat;
+            overflow: hidden;
+        }
+
+        /* 首页液态玻璃按钮 */
+        .liquid-glass-btn {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: 50%;
+            box-shadow: inset 0 0 15px rgba(255,255,255,0.1), 0 10px 30px rgba(0,0,0,0.4);
+            transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .liquid-glass-btn:hover {
+            transform: scale(1.1);
+            border-color: rgba(255,255,255,0.4);
+        }
+
+        /* 目录标题 - 缩小至 7xl */
+        .staircase-item {
+            color: #666; 
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            cursor: pointer;
+        }
+
+        .staircase-item:hover {
+            color: #fff;
+            transform: translateX(40px);
+            text-shadow: 0 0 25px rgba(255,255,255,0.8);
+        }
+
+        .preview-img {
+            position: absolute;
+            left: 480px;
+            top: -40px;
+            width: 380px;
+            height: 215px;
+            opacity: 0;
+            transform: scale(0.8) rotate(5deg);
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            pointer-events: none;
+            border-radius: 50px;
+            overflow: hidden;
+            z-index: 10;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+        }
+
+        .staircase-item:hover .preview-img {
+            opacity: 1;
+            transform: scale(1) rotate(0deg);
+        }
+
+        /* 页面切换动画 */
+        .page-transition {
+            transition: transform 1.2s cubic-bezier(0.8, 0, 0.1, 1), opacity 1.2s ease;
+            will-change: transform, opacity;
+        }
+
+        .hidden-page { transform: translateY(100%); opacity: 0; pointer-events: none; }
+        .active-page { transform: translateY(0); opacity: 1; pointer-events: auto; }
+        .prev-page { transform: translateY(-100%); opacity: 0; pointer-events: none; }
+
+        /* 1920*1080 容器 */
+        .screen-container {
+            max-width: 1920px;
+            margin: 0 auto;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* 项目图片等大 */
+        .project-img-container {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            background: #111;
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body>
+
+    <!-- 3D 宇宙 -->
+    <div id="canvas-container"></div>
+
+    <!-- 光标 1: 纸飞机 -->
+    <svg id="custom-cursor" viewBox="0 0 24 24">
+        <path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/>
+    </svg>
+
+    <!-- 光标 2: 放大镜 -->
+    <div id="glass-magnifier"></div>
+
+    <main class="screen-container overflow-hidden">
+        
+        <!-- 01 首页 - 字体缩小并增加间距防重叠 -->
+        <section id="page-home" class="page-transition absolute inset-0 flex items-center justify-between px-32 active-page">
+            <div class="max-w-[65%]">
+                <h1 class="text-[8.5rem] font-black tracking-tighter leading-[0.85] select-none">
+                    JESSE<br>DESIGN<br>2026
+                </h1>
+                <p class="mt-10 text-gray-500 font-light tracking-[0.5em] uppercase text-lg">工业设计 / 情感交互 / 叙事体验</p>
+            </div>
+            <div class="flex justify-end pr-10">
+                <button onclick="navTo('menu')" class="liquid-glass-btn w-20 h-20 flex items-center justify-center group">
+                    <svg class="w-6 h-6 text-white group-hover:translate-x-2 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+                    </svg>
+                </button>
+            </div>
+        </section>
+
+        <!-- 02 目录页 - 标题缩小至 7xl -->
+        <section id="page-menu" class="page-transition absolute inset-0 flex flex-col justify-center px-32 hidden-page">
+            <div class="space-y-10">
+                <div class="staircase-item flex items-baseline group" onclick="showProject(0)">
+                    <span class="text-gray-800 font-black italic text-3xl mr-10">01</span>
+                    <h2 class="text-7xl font-black uppercase">智能出行体验</h2>
+                    <div class="preview-img"><img src="https://images.unsplash.com/photo-1511919884226-fd3cad34687c?q=80&w=1000" class="w-full h-full object-cover"></div>
+                </div>
+                <div class="staircase-item flex items-baseline group ml-24" onclick="showProject(1)">
+                    <span class="text-gray-800 font-black italic text-3xl mr-10">02</span>
+                    <h2 class="text-7xl font-black uppercase">极简家居系列</h2>
+                    <div class="preview-img"><img src="https://images.unsplash.com/photo-1517705008128-361805f42e86?q=80&w=1000" class="w-full h-full object-cover"></div>
+                </div>
+                <div class="staircase-item flex items-baseline group ml-48" onclick="showProject(2)">
+                    <span class="text-gray-800 font-black italic text-3xl mr-10">03</span>
+                    <h2 class="text-7xl font-black uppercase">可穿戴数字化</h2>
+                    <div class="preview-img"><img src="https://images.unsplash.com/photo-1544117518-30dd44b99d0f?q=80&w=1000" class="w-full h-full object-cover"></div>
+                </div>
+                <div class="staircase-item flex items-baseline group ml-72" onclick="showProject(3)">
+                    <span class="text-gray-800 font-black italic text-3xl mr-10">04</span>
+                    <h2 class="text-7xl font-black uppercase">未来交互形态</h2>
+                    <div class="preview-img"><img src="https://images.unsplash.com/photo-1485827404703-89b55fcc595e?q=80&w=1000" class="w-full h-full object-cover"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 03 项目展示区 -->
+        <section id="page-project" class="page-transition absolute inset-0 hidden-page overflow-y-auto no-scrollbar bg-black/95 pt-24 pb-48 px-32">
+            <div class="max-w-[1600px] mx-auto">
+                <div class="flex justify-between items-end mb-32">
+                    <div>
+                        <h2 id="project-title" class="text-6xl font-black uppercase tracking-tight">Project Title</h2>
+                        <div class="h-1 w-20 bg-white mt-8"></div>
+                    </div>
+                    <button onclick="navTo('menu')" class="text-xs font-bold tracking-[0.4em] border-b border-white/20 pb-2 hover:text-white transition-all uppercase">Back to Index</button>
+                </div>
+
+                <div class="grid grid-cols-12 gap-20">
+                    <div class="col-span-4 sticky top-24 h-fit space-y-12">
+                        <div>
+                            <h3 class="text-gray-600 uppercase text-[10px] tracking-[0.5em] mb-4">Design Philosophy</h3>
+                            <p class="text-2xl font-bold leading-tight">探索纯粹几何与触感交互的平衡，在数字化浪潮中保留物理世界的温润。</p>
+                        </div>
+                        <div class="pt-8 border-t border-white/10">
+                            <h3 class="text-gray-600 uppercase text-[10px] tracking-[0.5em] mb-4">Description</h3>
+                            <p class="text-gray-400 font-light leading-relaxed text-lg">
+                                每一条曲线都经过参数化模拟与样机实测。双击页面可呼唤“液态玻璃”观察镜。
+                            </p>
+                        </div>
+                        <div class="flex space-x-4 opacity-30 text-[10px] tracking-widest uppercase">
+                            <span>Industrial</span>
+                            <span>/</span>
+                            <span>2026 Portfolio</span>
+                        </div>
+                    </div>
+
+                    <div class="col-span-8 space-y-16" ondblclick="toggleMagnifierMode()">
+                        <div class="project-img-container"><img id="main-img" src="" class="w-full h-full object-cover"></div>
+                        <div class="project-img-container"><img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1200" class="w-full h-full object-cover"></div>
+                        <div class="project-img-container"><img src="https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?q=80&w=1200" class="w-full h-full object-cover"></div>
+                        <div class="project-img-container"><img src="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=1200" class="w-full h-full object-cover"></div>
+                        <div class="project-img-container"><img src="https://images.unsplash.com/photo-1472214103451-9374bd1c798e?q=80&w=1200" class="w-full h-full object-cover"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 04 简历页 -->
+        <section id="page-resume" class="page-transition absolute inset-0 flex items-center justify-center px-32 hidden-page">
+            <div class="max-w-5xl w-full grid grid-cols-12 gap-24">
+                <div class="col-span-4">
+                    <h2 class="text-7xl font-black italic opacity-10 mb-8 leading-none">EXPERIENCE</h2>
+                    <p class="text-gray-500 font-bold tracking-widest text-sm uppercase">Focus on Industrial Design</p>
+                </div>
+                <div class="col-span-8 border-l border-white/10 pl-20 space-y-24">
+                    <div class="relative">
+                        <span class="text-gray-700 font-bold italic text-lg mb-2 block">2025 - PRESENT</span>
+                        <h3 class="text-3xl font-black uppercase tracking-tight">高级工业设计实习生 | 某知名电动车品牌</h3>
+                        <p class="mt-4 text-gray-500 font-light leading-relaxed text-lg">主导下一代 HMI 物理控制旋钮的形态定义，通过 Alias 实现了 A 级曲面建模。</p>
+                    </div>
+                    <div class="relative">
+                        <span class="text-gray-700 font-bold italic text-lg mb-2 block">2024 - 2025</span>
+                        <h3 class="text-3xl font-black uppercase tracking-tight">交互设计师实习 | 硅谷 AI 实验室</h3>
+                        <p class="mt-4 text-gray-500 font-light leading-relaxed text-lg">设计了基于手势识别的智能家居中枢，利用 Unity 构建空间交互测试环境。</p>
+                    </div>
+                    <div class="relative">
+                        <span class="text-gray-700 font-bold italic text-lg mb-2 block">2023 - 2024</span>
+                        <h3 class="text-3xl font-black uppercase tracking-tight">产品助理 | 顶尖设计事务所</h3>
+                        <p class="mt-4 text-gray-500 font-light leading-relaxed text-lg">参与多款获 iF/Red Dot 奖项产品的初期开发，负责 CMF 趋势研究。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 05 尾页 -->
+        <section id="page-footer" class="page-transition absolute inset-0 flex flex-col items-center justify-center hidden-page">
+            <h1 class="text-[16vw] font-black tracking-tighter leading-none opacity-90 select-none">THANKS</h1>
+            <div class="mt-12 flex flex-col items-center space-y-6">
+                <div class="w-16 h-1 bg-white"></div>
+                <p class="text-gray-500 uppercase tracking-[0.5em] text-md font-light">Crafting the future, one curve at a time.</p>
+                <button onclick="navTo('home')" class="mt-16 text-xs italic opacity-30 hover:opacity-100 transition-opacity uppercase tracking-widest border-b border-transparent hover:border-white">Back to start</button>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // --- 1. Three.js Universe ---
+        let scene, camera, renderer, starSystem;
+        const starCount = 18000;
+
+        function initThree() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2000);
+            camera.position.z = 1.5;
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            const geometry = new THREE.BufferGeometry();
+            const pos = new Float32Array(starCount * 3);
+            const cols = new Float32Array(starCount * 3);
+            const szs = new Float32Array(starCount);
+
+            const colorPalette = [
+                new THREE.Color(0xffffff), 
+                new THREE.Color(0xc0d6ff), 
+                new THREE.Color(0xfff4e0),
+                new THREE.Color(0xe0b3ff)
+            ];
+
+            for (let i = 0; i < starCount; i++) {
+                pos[i * 3] = (Math.random() - 0.5) * 1500;
+                pos[i * 3 + 1] = (Math.random() - 0.5) * 1500;
+                pos[i * 3 + 2] = (Math.random() - 0.5) * 1500;
+
+                const c = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+                cols[i * 3] = c.r; cols[i * 3 + 1] = c.g; cols[i * 3 + 2] = c.b;
+                szs[i] = Math.random() * 2.5 + 0.2;
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+            geometry.setAttribute('size', new THREE.BufferAttribute(szs, 1));
+
+            const material = new THREE.PointsMaterial({
+                size: 1.8,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.9,
+                map: new THREE.TextureLoader().load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/sprites/circle.png'),
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+
+            starSystem = new THREE.Points(geometry, material);
+            scene.add(starSystem);
+
+            animate();
+        }
+
+        let mouseX = 0, mouseY = 0;
+        function animate() {
+            requestAnimationFrame(animate);
+            starSystem.rotation.y += 0.00015;
+            const tx = mouseX * 0.0003;
+            const ty = mouseY * 0.0003;
+            starSystem.rotation.y += (tx - starSystem.rotation.y) * 0.05;
+            starSystem.rotation.x += (ty - starSystem.rotation.x) * 0.05;
+            renderer.render(scene, camera);
+        }
+
+        // --- 2. Interactivity ---
+        const cursorPlane = document.getElementById('custom-cursor');
+        const glassMagnifier = document.getElementById('glass-magnifier');
+        let isMagnifierActive = false;
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX - window.innerWidth / 2;
+            mouseY = e.clientY - window.innerHeight / 2;
+
+            cursorPlane.style.left = e.clientX + 'px';
+            cursorPlane.style.top = e.clientY + 'px';
+            
+            const dx = e.movementX;
+            const dy = e.movementY;
+            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+            if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+                cursorPlane.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+            }
+
+            if (isMagnifierActive) {
+                glassMagnifier.style.left = (e.clientX - 110) + 'px';
+                glassMagnifier.style.top = (e.clientY - 110) + 'px';
+                updateMagnifierView(e);
+            }
+        });
+
+        function toggleMagnifierMode() {
+            isMagnifierActive = !isMagnifierActive;
+            if (isMagnifierActive) {
+                glassMagnifier.style.display = 'block';
+                cursorPlane.style.opacity = '0';
+                const currentImg = document.getElementById('main-img');
+                glassMagnifier.style.backgroundImage = `url(${currentImg.src})`;
+                glassMagnifier.style.backgroundSize = (currentImg.width * 3.5) + "px auto";
+            } else {
+                glassMagnifier.style.display = 'none';
+                cursorPlane.style.opacity = '1';
+            }
+        }
+
+        function updateMagnifierView(e) {
+            const img = document.getElementById('main-img');
+            const rect = img.getBoundingClientRect();
+            if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                glassMagnifier.style.opacity = '1';
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                glassMagnifier.style.backgroundPosition = `-${x * 3.5 - 110}px -${y * 3.5 - 110}px`;
+            } else {
+                glassMagnifier.style.opacity = '0.3';
+            }
+        }
+
+        const flow = ['home', 'menu', 'resume', 'footer'];
+        let currentFlowIndex = 0;
+        let isTransitioning = false;
+        let activePageID = 'home';
+
+        function navTo(pageId) {
+            if (isTransitioning) return;
+            isTransitioning = true;
+
+            if (pageId === 'project') {
+                const el = document.getElementById('page-project');
+                el.classList.remove('hidden-page');
+                el.classList.add('active-page');
+                activePageID = 'project';
+            } else {
+                if (activePageID === 'project') {
+                    document.getElementById('page-project').classList.add('hidden-page');
+                    document.getElementById('page-project').classList.remove('active-page');
+                }
+                const nextIndex = flow.indexOf(pageId);
+                flow.forEach((p, i) => {
+                    const el = document.getElementById(`page-${p}`);
+                    el.classList.remove('active-page', 'hidden-page', 'prev-page');
+                    if (i === nextIndex) el.classList.add('active-page');
+                    else if (i < nextIndex) el.classList.add('prev-page');
+                    else el.classList.add('hidden-page');
+                });
+                currentFlowIndex = nextIndex;
+                activePageID = pageId;
+            }
+
+            isMagnifierActive = false;
+            glassMagnifier.style.display = 'none';
+            cursorPlane.style.opacity = '1';
+            setTimeout(() => { isTransitioning = false; }, 1200);
+        }
+
+        window.addEventListener('wheel', (e) => {
+            if (isTransitioning || activePageID === 'project') return;
+            if (Math.abs(e.deltaY) > 60) {
+                if (e.deltaY > 0 && currentFlowIndex < flow.length - 1) {
+                    navTo(flow[currentFlowIndex + 1]);
+                } else if (e.deltaY < 0 && currentFlowIndex > 0) {
+                    navTo(flow[currentFlowIndex - 1]);
+                }
+            }
+        });
+
+        const projects = [
+            { t: "智能出行体验", i: "https://images.unsplash.com/photo-1511919884226-fd3cad34687c" },
+            { t: "极简家居系列", i: "https://images.unsplash.com/photo-1517705008128-361805f42e86" },
+            { t: "可穿戴数字化", i: "https://images.unsplash.com/photo-1544117518-30dd44b99d0f" },
+            { t: "未来交互形态", i: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e" }
+        ];
+
+        function showProject(index) {
+            const data = projects[index];
+            document.getElementById('project-title').innerText = data.t;
+            document.getElementById('main-img').src = data.i + "?q=80&w=1600";
+            document.getElementById('page-project').scrollTop = 0;
+            navTo('project');
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        window.onload = initThree;
+    </script>
+</body>
+</html>
