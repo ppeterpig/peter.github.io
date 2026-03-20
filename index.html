@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>邓凯琳 | Portfolio - 电子手帐风格</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --clay-pink: #ffb1bd;
+            --clay-blue: #a2d2ff;
+            --clay-yellow: #fefae0;
+            --clay-green: #ccd5ae;
+            --clay-orange: #f9dcc4;
+            --bg-dark: #0d0d0d;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            color: white;
+            font-family: 'Noto Sans SC', sans-serif;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        /* 纸张纹理 */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('https://www.transparenttextures.com/patterns/cardboard-flat.png');
+            opacity: 0.15;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .hand-draw { font-family: 'ZCOOL KuaiLe', cursive; }
+        .art-font { font-family: 'Fredoka One', cursive; }
+
+        /* 首页大标题：粉色渐变 + 白色描边 */
+        .title-gradient {
+            background: linear-gradient(180deg, #ff85a1 0%, #ffb1bd 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            -webkit-text-stroke: 3px white;
+            filter: drop-shadow(8px 8px 0px rgba(0,0,0,0.3));
+        }
+
+        /* 拟物轻黏土效果 */
+        .clay-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 40px;
+            box-shadow: 
+                20px 20px 40px rgba(0,0,0,0.4),
+                inset -5px -5px 15px rgba(255,255,255,0.02),
+                inset 5px 5px 15px rgba(0,0,0,0.3);
+            backdrop-filter: blur(12px);
+        }
+
+        /* 拍立得效果 */
+        .polaroid {
+            background: #fdfdfd;
+            padding: 12px 12px 45px 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+        .polaroid:hover {
+            transform: scale(1.1) rotate(0deg) !important;
+            z-index: 50;
+        }
+        .polaroid img {
+            width: 100%;
+            aspect-ratio: 1/1;
+            object-fit: cover;
+            border: 1px solid #eee;
+        }
+        .polaroid-label {
+            position: absolute;
+            bottom: 12px;
+            width: 100%;
+            left: 0;
+            text-align: center;
+            color: #333;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        /* iOS 风格文件夹 */
+        .folder-ios {
+            width: 160px;
+            height: 160px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 35px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 
+                10px 10px 20px rgba(0,0,0,0.3),
+                inset 2px 2px 5px rgba(255,255,255,0.1);
+        }
+        .folder-ios:hover {
+            transform: scale(1.1);
+            background: rgba(255, 255, 255, 0.15);
+        }
+        .folder-peek {
+            position: absolute;
+            top: -20px;
+            width: 80%;
+            height: 100px;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+            transform: rotate(-3deg);
+            transition: transform 0.3s;
+        }
+        .folder-ios:hover .folder-peek {
+            transform: rotate(-5deg) translateY(-10px);
+        }
+
+        /* 贴纸 */
+        .sticker {
+            position: absolute;
+            pointer-events: none;
+            z-index: 5;
+            filter: drop-shadow(4px 4px 3px rgba(0,0,0,0.4));
+        }
+
+        .page-section {
+            min-height: 100vh;
+            width: 100%;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 80px 0;
+        }
+
+        /* 液态玻璃箭头 */
+        .liquid-arrow {
+            width: 70px;
+            height: 70px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            animation: bounce 2s infinite;
+            cursor: pointer;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-15px);}
+            60% {transform: translateY(-8px);}
+        }
+
+        /* 详情层 */
+        #project-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-dark);
+            z-index: 1000;
+            display: none;
+            overflow-y: auto;
+        }
+
+        .parallax {
+            transition: transform 0.1s ease-out;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 项目展示详情层 -->
+    <div id="project-overlay">
+        <div class="max-w-5xl mx-auto px-6 py-20">
+            <button onclick="closeProject()" class="mb-16 flex items-center gap-3 text-[#ffb1bd] hover:opacity-80 transition-opacity art-font text-xl">
+                <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                BACK TO LIST
+            </button>
+            <div id="project-content">
+                <!-- 动态内容 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 第一页：封面 -->
+    <section class="page-section items-center text-center">
+        <!-- 点缀贴纸/图片 -->
+        <div class="sticker parallax top-20 left-[15%] w-32 h-32 rotate-12" data-speed="0.05">
+            <img src="https://api.dicebear.com/7.x/shapes/svg?seed=sticker1&backgroundColor=ffb1bd" class="w-full">
+        </div>
+        <div class="sticker parallax bottom-40 right-[10%] w-40 h-40 -rotate-6" data-speed="0.08">
+            <img src="https://api.dicebear.com/7.x/shapes/svg?seed=sticker2&backgroundColor=a2d2ff" class="w-full">
+        </div>
+        <div class="sticker parallax top-1/2 left-[5%] text-6xl" data-speed="-0.03">✨</div>
+        <div class="sticker parallax top-[20%] right-[20%] text-6xl" data-speed="0.02">🍭</div>
+
+        <h1 class="art-font title-gradient text-[15vw] md:text-[200px] leading-none mb-10 tracking-tight">
+            PORTFOLIO
+        </h1>
+        
+        <div class="liquid-arrow mb-20" onclick="scrollToPage(1)">
+            <svg width="35" height="35" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 13l5 5 5-5M7 6l5 5 5-5"/></svg>
+        </div>
+
+        <div class="mt-auto pb-12 w-full">
+            <div class="flex justify-center items-center gap-8 text-xl md:text-2xl font-bold hand-draw bg-white/5 py-4 backdrop-blur-sm border-y border-white/10">
+                <span class="text-[#ffb1bd]">EMAIL: 2403445400@qq.com</span>
+                <span class="opacity-30">|</span>
+                <span class="text-[#a2d2ff]">TEL: 13192670279</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- 第二页：个人档案 -->
+    <section id="profile" class="page-section">
+        <div class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row gap-20 items-center">
+            
+            <!-- 左侧：双拍立得 -->
+            <div class="w-full md:w-1/2 flex justify-center items-center relative h-[500px]">
+                <!-- Hello Polaroid -->
+                <div class="polaroid absolute top-10 left-10 w-64 -rotate-6">
+                    <img src="https://i.postimg.cc/nLRhZJKt/Gemini_Generated_Image_s7x6nks7x6nks7x6.png">
+                    <div class="polaroid-label art-font">HELLO</div>
+                </div>
+                <!-- Peter Polaroid -->
+                <div class="polaroid absolute bottom-10 right-10 w-64 rotate-3">
+                    <img src="https://i.postimg.cc/fWjTTmfY/8ff420c845f01b35f4341049a38814e.jpg" alt="PETER">
+                    <div class="polaroid-label art-font uppercase">PETER</div>
+                </div>
+            </div>
+
+            <!-- 右侧：详尽信息 -->
+            <div class="w-full md:w-1/2 clay-card p-10 md:p-14 space-y-10 relative">
+                <div class="sticker -top-6 -right-6 text-5xl">📌</div>
+                
+                <div>
+                    <h2 class="hand-draw text-5xl text-[#ffb1bd] mb-6 underline decoration-white/20 underline-offset-8"># 个人档案</h2>
+                    <p class="text-lg text-gray-200 leading-relaxed font-light">
+                        你好！我是邓凯琳，一名具备<b>工业设计工程</b>背景的设计师。
+                        我擅长通过跨学科的视角审视设计，在理性的 UX 逻辑中融入感性的 IP 化表达。
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-[#ffb1bd] font-bold text-lg mb-3">教育背景</h3>
+                        <ul class="space-y-1 text-gray-400">
+                            <li><b class="text-white">广东工业大学</b> (硕士)</li>
+                            <li class="text-sm">工业设计工程 · 2023-2026</li>
+                            <li class="mt-2"><b class="text-white">中南林业科技大学</b> (本科)</li>
+                            <li class="text-sm">工业设计 · 2019-2023</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="text-[#a2d2ff] font-bold text-lg mb-3">专业奖项</h3>
+                        <ul class="space-y-1 text-sm text-gray-400">
+                            <li>🏆 NCDA 未来设计师 · 省一等奖</li>
+                            <li>🏆 华灿杯 / 蓝桥杯 · 多项奖项</li>
+                            <li>🏆 实用新型 2 外观专利 1 项</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="pt-6 border-t border-white/10">
+                    <h3 class="text-[#fefae0] font-bold text-lg mb-4">大厂履历</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-white/5 p-4 rounded-2xl">
+                            <div class="font-bold">欢聚集团</div>
+                            <div class="text-xs text-gray-500">UX 设计师</div>
+                        </div>
+                        <div class="bg-white/5 p-4 rounded-2xl">
+                            <div class="font-bold">迅雷</div>
+                            <div class="text-xs text-gray-500">UI 设计师</div>
+                        </div>
+                        <div class="bg-white/5 p-4 rounded-2xl">
+                            <div class="font-bold">安克创新</div>
+                            <div class="text-xs text-gray-500">UX 设计师</div>
+                        </div>
+                        <div class="bg-white/5 p-4 rounded-2xl">
+                            <div class="font-bold">荔枝集团</div>
+                            <div class="text-xs text-gray-500">UI 设计师</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 第三页：项目目录 -->
+    <section id="index" class="page-section">
+        <div class="max-w-6xl mx-auto px-6">
+            <h2 class="hand-draw text-6xl text-center mb-24">我的项目</h2>
+            
+            <div class="flex flex-wrap justify-center gap-10 md:gap-16">
+                <!-- 文件夹 1 (Blue) -->
+                <div class="flex flex-col items-center gap-4">
+                    <div class="folder-ios" style="background: #a2d2ff;" onclick="openProject(0)">
+                        <div class="folder-peek"><img src="https://api.dicebear.com/7.x/shapes/svg?seed=social&backgroundColor=a2d2ff" class="w-full"></div>
+                        <span class="text-4xl text-blue-900">💬</span>
+                    </div>
+                    <span class="text-sm font-bold text-gray-400">语聊社交H5</span>
+                </div>
+                <!-- 文件夹 2 (Orange) -->
+                <div class="flex flex-col items-center gap-4">
+                    <div class="folder-ios" style="background: #f9dcc4;" onclick="openProject(1)">
+                        <div class="folder-peek"><img src="https://api.dicebear.com/7.x/shapes/svg?seed=money&backgroundColor=f9dcc4" class="w-full"></div>
+                        <span class="text-4xl text-orange-900">💰</span>
+                    </div>
+                    <span class="text-sm font-bold text-gray-400">叨叨记账APP</span>
+                </div>
+                <!-- 文件夹 3 (Pink) -->
+                <div class="flex flex-col items-center gap-4">
+                    <div class="folder-ios" style="background: #ffb1bd;" onclick="openProject(2)">
+                        <div class="folder-peek"><img src="https://api.dicebear.com/7.x/shapes/svg?seed=game&backgroundColor=ffb1bd" class="w-full"></div>
+                        <span class="text-4xl text-pink-900">🎁</span>
+                    </div>
+                    <span class="text-sm font-bold text-gray-400">荔枝运营项目</span>
+                </div>
+                <!-- 文件夹 4 (Green) -->
+                <div class="flex flex-col items-center gap-4">
+                    <div class="folder-ios" style="background: #ccd5ae;" onclick="openProject(3)">
+                        <div class="folder-peek"><img src="https://api.dicebear.com/7.x/shapes/svg?seed=ip&backgroundColor=ccd5ae" class="w-full"></div>
+                        <span class="text-4xl text-green-900">🧸</span>
+                    </div>
+                    <span class="text-sm font-bold text-gray-400">安克IP设计</span>
+                </div>
+                <!-- 文件夹 5 (Yellow) -->
+                <div class="flex flex-col items-center gap-4">
+                    <div class="folder-ios" style="background: #fefae0;" onclick="openProject(4)">
+                        <div class="folder-peek"><img src="https://api.dicebear.com/7.x/shapes/svg?seed=edu&backgroundColor=fefae0" class="w-full"></div>
+                        <span class="text-4xl text-yellow-900">📖</span>
+                    </div>
+                    <span class="text-sm font-bold text-gray-400">教育类APP</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 第四页：致谢 -->
+    <section class="page-section items-center text-center">
+        <div class="sticker parallax top-[20%] left-[10%] text-6xl" data-speed="0.04">🎈</div>
+        <div class="sticker parallax bottom-[20%] right-[10%] text-6xl" data-speed="-0.04">💖</div>
+
+        <h2 class="art-font title-gradient text-[8vw] md:text-[100px] leading-tight">
+            THANKS FOR WATCHING
+        </h2>
+        <div class="mt-10 flex flex-col items-center gap-4">
+            <p class="hand-draw text-2xl text-gray-500">保持好奇 · 持续创作</p>
+            <div class="w-20 h-1 bg-[#ffb1bd] rounded-full"></div>
+        </div>
+    </section>
+
+    <script>
+        // 视差逻辑
+        window.addEventListener('scroll', () => {
+            const parallaxElements = document.querySelectorAll('.parallax');
+            let scrollValue = window.scrollY;
+            parallaxElements.forEach(el => {
+                let speed = el.getAttribute('data-speed');
+                el.style.transform = `translateY(${scrollValue * speed}px)`;
+            });
+        });
+
+        // 滚动跳转
+        function scrollToPage(index) {
+            const targets = [document.body, document.getElementById('profile'), document.getElementById('index')];
+            targets[index].scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 项目数据
+        const projects = [
+            {
+                name: "语聊社交产品 H5 界面设计",
+                images: ["social-1", "social-2", "social-3", "social-4", "social-5"]
+            },
+            {
+                name: "叨叨记账 APP 改版设计",
+                images: ["money-1", "money-2", "money-3", "money-4", "money-5"]
+            },
+            {
+                name: "荔枝集团 0元盲盒运营项目",
+                images: ["game-1", "game-2", "game-3", "game-4", "game-5"]
+            },
+            {
+                name: "安克创新 智能桌充 IP 形象设计",
+                images: ["ip-1", "ip-2", "ip-3", "ip-4", "ip-5"]
+            },
+            {
+                name: "教育类多模态交互 APP 研究",
+                images: ["edu-1", "edu-2", "edu-3", "edu-4", "edu-5"]
+            }
+        ];
+
+        function openProject(id) {
+            const p = projects[id];
+            const content = document.getElementById('project-content');
+            
+            let imagesHtml = p.images.map(img => `
+                <div class="w-full bg-white/5 rounded-[40px] aspect-video flex items-center justify-center border border-white/10 overflow-hidden mb-10 shadow-2xl">
+                    <div class="text-gray-600 text-lg">作品集展示图 - ${img}</div>
+                </div>
+            `).join('');
+
+            content.innerHTML = `
+                <h1 class="text-5xl md:text-7xl font-bold mb-16 text-white tracking-tight">${p.name}</h1>
+                <div class="space-y-12">
+                    ${imagesHtml}
+                </div>
+            `;
+            
+            document.getElementById('project-overlay').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeProject() {
+            document.getElementById('project-overlay').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+    </script>
+</body>
+</html>
